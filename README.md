@@ -1,0 +1,2 @@
+# ExamClutch-A-portal-for-students-and-Faculties-to-upload-retrieve-pyq-papers-integrated-with-AI
+The purpose of ExamClutch is to provide a centralized platform that helps students in preparing for examinations by allowing them to practice with various questions and problems through a quick and seamless interface. The system retrieves questions based on user prompts and utilizes an AI to provide solved answers and guide to solving the question.
