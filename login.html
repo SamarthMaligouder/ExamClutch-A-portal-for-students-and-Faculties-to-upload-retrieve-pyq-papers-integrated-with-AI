@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login | Question Retrieval System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#f4f6f9; --panel:#ffffff; --text:#222; --muted:#6b7280;
+      --brand:#0d6efd; --brand-600:#0b5ed7; --border:#e5e7eb;
+      --shadow:0 4px 12px rgba(0,0,0,.08);
+    }
+    .dark{
+      --bg:#0f172a; --panel:#111827; --text:#e5e7eb; --muted:#94a3b8;
+      --brand:#60a5fa; --brand-600:#3b82f6; --border:#1f2937;
+      --shadow:0 6px 18px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      display:flex; justify-content:center; align-items:center;
+      background:var(--bg); color:var(--text);
+      font-family: system-ui, sans-serif;
+    }
+    .card{
+      background:var(--panel); border:1px solid var(--border);
+      border-radius:14px; padding:40px; text-align:center;
+      box-shadow:var(--shadow); width:360px;
+    }
+    h1{margin-bottom:20px;}
+    .btn{
+      width:100%; margin:12px 0; padding:14px;
+      border:none; border-radius:10px; cursor:pointer;
+      background:var(--brand); color:#fff; font-weight:600;
+      font-size:16px; transition:filter .2s;
+    }
+    .btn:hover{filter:brightness(.9);}
+    .toggle{margin-top:20px; display:inline-flex; align-items:center; gap:8px; cursor:pointer;}
+    .toggle input{display:none;}
+    .toggle .dot{width:16px; height:16px; border-radius:50%; background:var(--brand);}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Welcome</h1>
+    <p>Select your role to continue:</p>
+    <button class="btn" onclick="location.href='index.html'">👨‍🎓 Student Login</button>
+    <button class="btn" onclick="location.href='faculty.html'">👩‍🏫 Faculty Login</button>
+    <label class="toggle">
+      <input id="theme-toggle" type="checkbox">
+      <span class="dot"></span> Dark Mode
+    </label>
+  </div>
+
+  <script>
+    const toggle=document.getElementById("theme-toggle");
+    const applyTheme=(m)=>{if(m==='dark'){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}localStorage.setItem('qr_theme',m);}
+    const saved=localStorage.getItem('qr_theme')||'light';
+    applyTheme(saved); toggle.checked=saved==='dark';
+    toggle.addEventListener('change',()=>applyTheme(toggle.checked?'dark':'light'));
+  </script>
+</body>
+</html>

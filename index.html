@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Portal | Question Retrieval</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#f4f6f9; --panel:#ffffff; --text:#222; --muted:#6b7280;
+      --brand:#0d6efd; --brand-600:#0b5ed7; --bot:#e9ecef; --border:#e5e7eb;
+      --shadow:0 4px 12px rgba(0,0,0,.08);
+    }
+    .dark{
+      --bg:#0f172a; --panel:#111827; --text:#e5e7eb; --muted:#94a3b8;
+      --brand:#60a5fa; --brand-600:#3b82f6; --bot:#1f2937; --border:#1f2937;
+      --shadow:0 6px 18px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+    main{flex:1;display:flex;flex-direction:column;gap:16px;padding:16px;min-width:0;}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 16px;box-shadow:var(--shadow);position:sticky;top:0;z-index:5;}
+    .title{font-weight:700;font-size:20px;}
+    .right-controls{display:flex;gap:8px;align-items:center;}
+    .toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;}
+    .toggle input{display:none;}
+    .toggle .dot{width:16px;height:16px;border-radius:50%;background:var(--brand);}
+    .pill{padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--panel);box-shadow:var(--shadow);}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;}
+    .btn{padding:8px 14px;border:none;border-radius:8px;cursor:pointer;background:var(--brand);color:#fff;font-weight:600;}
+    .btn.secondary{background:transparent;color:var(--text);border:1px solid var(--border);}
+    .chip{padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel);cursor:pointer;box-shadow:var(--shadow);}
+    .chip.active{background:var(--brand);color:#fff;}
+    #questions-card{flex:1;display:flex;flex-direction:column;}
+    #questions-container{flex:1;border:1px solid var(--border);border-radius:14px;background:var(--panel);box-shadow:var(--shadow);padding:16px;overflow:auto;}
+    .pdf-link{display:block;margin:8px 0;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--panel);color:var(--brand);font-weight:600;text-decoration:none;}
+    .pdf-view iframe{width:100%;height:100%;border:0;}
+    /* Expanded Mode */
+    body.expanded .grid{display:none;}
+    body.expanded #questions-card{flex:1;padding:0;border:none;}
+    body.expanded #questions-container{padding:0;border:none;border-radius:0;height:100vh;}
+    /* Chat Sidebar */
+    #chat-sidebar{width:350px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;}
+    #chat-header{padding:12px;background:linear-gradient(135deg,var(--brand),var(--brand-600));color:#fff;font-weight:700;}
+    #chat-messages{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}
+    .message{padding:8px 12px;border-radius:12px;max-width:80%;}
+    .message.user{align-self:flex-end;background:var(--brand);color:#fff;}
+    .message.bot{align-self:flex-start;background:var(--bot);}
+    #chat-input-bar{display:flex;padding:10px;border-top:1px solid var(--border);}
+    #chat-input{flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;}
+    .btn-link{background:transparent;border:1px solid #ccc;color:#333;padding:8px 12px;border-radius:8px;text-decoration:none;margin-left:8px;}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="toolbar">
+  <div class="title">📚 Student Portal</div>
+  <div class="right-controls">
+    <!-- NEW BUTTONS -->
+    <a class="btn-link" href="faculty.html">↔ Switch to Faculty</a>
+    <a class="btn-link" href="login.html">🔑 Login</a>
+
+    <div class="pill">Backend: <strong id="api-status">checking…</strong></div>
+    <label class="toggle"><input id="theme-toggle" type="checkbox"><span class="dot"></span> Dark</label>
+  </div>
+</div>
+    <div class="grid">
+      <section class="card">
+        <h2>1) Select Course</h2>
+        <div id="course-container"></div>
+      </section>
+      <section class="card">
+        <h2>2) Select Exam</h2>
+        <div id="exam-container"></div>
+      </section>
+    </div>
+    <section class="card" id="questions-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2>3) Questions</h2>
+        <button id="back-btn" class="btn secondary hidden">← Back</button>
+      </div>
+      <div id="questions-container"></div>
+    </section>
+  </main>
+  <aside id="chat-sidebar">
+    <div id="chat-header">AI Tutor</div>
+    <div id="chat-messages"><div class="message bot">👋 Hello! Select a course and exam, then ask me anything.</div></div>
+    <div id="chat-input-bar">
+      <input type="text" id="chat-input" placeholder="Ask a question…">
+      <button id="send-btn" class="btn">Send</button>
+    </div>
+  </aside>
+  <script>
+    const BACKEND_ORIGIN="http://127.0.0.1:8000";
+    const apiStatusEl=document.getElementById('api-status');
+    const themeToggle=document.getElementById("theme-toggle");
+    const applyTheme=(m)=>{document.documentElement.classList.toggle("dark",m==="dark");localStorage.setItem("qr_theme",m);}
+    applyTheme(localStorage.getItem("qr_theme")||"light");
+    themeToggle.checked=localStorage.getItem("qr_theme")==="dark";
+    themeToggle.addEventListener("change",()=>applyTheme(themeToggle.checked?"dark":"light"));
+
+    fetch(`${BACKEND_ORIGIN}/get_courses`).then(r=>apiStatusEl.textContent=r.ok?'online':'offline').catch(()=>apiStatusEl.textContent='offline');
+
+    const courseContainer=document.getElementById("course-container");
+    const examContainer=document.getElementById("exam-container");
+    const questionsWrap=document.getElementById("questions-container");
+    const backBtn=document.getElementById("back-btn");
+    let selectedCourse="",selectedExam="";
+    function absoluteOrPrefixed(url){return/^https?:/.test(url)?url:`${BACKEND_ORIGIN}${url}`;}
+    async function loadCourses(){
+      const res=await fetch(`${BACKEND_ORIGIN}/get_courses`);const data=await res.json();
+      courseContainer.innerHTML="";(data.courses||[]).forEach(c=>{
+        const b=document.createElement("button");b.textContent=c;b.className="chip";
+        b.onclick=()=>{selectedCourse=c;examContainer.innerHTML="";questionsWrap.innerHTML="";fetchExams(c);}
+        courseContainer.appendChild(b);
+      });
+    }
+    async function fetchExams(course){
+      const res=await fetch(`${BACKEND_ORIGIN}/get_exams/${encodeURIComponent(course)}`);const data=await res.json();
+      examContainer.innerHTML="";(data.exams||[]).forEach(e=>{
+        const b=document.createElement("button");b.textContent=e;b.className="chip";
+        b.onclick=()=>{selectedExam=e;fetchQuestions(course,e);}
+        examContainer.appendChild(b);
+      });
+    }
+    async function fetchQuestions(course,exam){
+      const res=await fetch(`${BACKEND_ORIGIN}/get_questions/${encodeURIComponent(course)}/${encodeURIComponent(exam)}`);const data=await res.json();
+      questionsWrap.innerHTML="";(data.questions||[]).forEach(q=>{
+        if(!q.Questions)return;
+        const a=document.createElement("a");a.textContent=q.Questions.split("/").pop();a.className="pdf-link";
+        a.onclick=()=>showPdfView(q.Questions);questionsWrap.appendChild(a);
+      });
+    }
+    function showPdfView(url){
+      document.body.classList.add("expanded");backBtn.classList.remove("hidden");
+      questionsWrap.classList.add("pdf-view");questionsWrap.innerHTML="";
+      const f=document.createElement("iframe");f.src=absoluteOrPrefixed(url);questionsWrap.appendChild(f);
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+    function showSelectionList(){
+      document.body.classList.remove("expanded");backBtn.classList.add("hidden");
+      questionsWrap.classList.remove("pdf-view");
+      if(selectedCourse&&selectedExam)fetchQuestions(selectedCourse,selectedExam);
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+    backBtn.addEventListener("click",showSelectionList);
+    loadCourses();
+
+    // Chat
+    const chatMessages=document.getElementById("chat-messages"),chatInput=document.getElementById("chat-input"),sendBtn=document.getElementById("send-btn");
+    function addMsg(t,s){const d=document.createElement("div");d.className=`message ${s}`;d.textContent=t;chatMessages.appendChild(d);chatMessages.scrollTop=chatMessages.scrollHeight;}
+    async function sendMsg(){
+      const q=chatInput.value.trim();if(!q)return;addMsg(q,"user");chatInput.value="";addMsg("Tutor is thinking…","bot");const t=chatMessages.lastChild;
+      try{const res=await fetch(`${BACKEND_ORIGIN}/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:q,course:selectedCourse,exam:selectedExam})});const data=await res.json();t.remove();addMsg((data&&data.response)?data.response:"No response.","bot");}
+      catch(e){t.remove();addMsg("Error connecting.","bot");}
+    }
+    sendBtn.onclick=sendMsg;chatInput.onkeypress=(e)=>{if(e.key==="Enter")sendMsg();}
+  </script>
+</body>
+</html>
